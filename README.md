@@ -2,7 +2,8 @@
 
 Junta a etiqueta do Mercado Livre e a DANFE numa folha 10x15 só.
 
-A etiqueta do Flex não tem nota. Ela sai em 10x15, sem a parte de recortar, com o nome do cliente embaixo.
+A etiqueta do Flex não tem nota. Ela sai em 10x15, compacta, com o nome do cliente embaixo.
+Nas bordas vai um aviso de cuidado. Para vidro, o aviso diz que o produto é frágil.
 O nome vem da lista de separação, então baixe a etiqueta do Flex com ela.
 
 Use em https://guirlviana.github.io/simplificador-etiqueta/

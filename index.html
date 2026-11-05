@@ -192,29 +192,106 @@ function lerSeparacao(itens) {
   return nomes;
 }
 
-async function desenharFlex(saida, origem, p, cliente, num, fontes, rgb) {
-  const loja = p.itens.find(i => /^#\d{6,}$/.test(i.str));
-  const flex = p.itens.find(i => i.str === 'FLEX');
-  if (!loja || !flex) return false;
-  const corte = { left: 8, right: p.largura - 18, top: loja.y + 14, bottom: Math.min(...p.itens.map(i => i.y)) - 3.5 };
-  const margem = 4, faixa = 24;
-  const larg = corte.right - corte.left, alt = corte.top - corte.bottom;
-  const esc = Math.min((SAIDA_L - 2 * margem) / larg, (SAIDA_A - faixa - 2 * margem) / alt);
-  const x0 = (SAIDA_L - larg * esc) / 2, y0 = margem + faixa;
+const FRAGIL = /vidro|copo|ta[cç]a|jarra|cristal|travessa|marinex|duralex|nadir/i;
+
+async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
+  const { rgb, degrees } = PDFLib;
+  const { normal, negrito } = fontes;
+  const itens = p.itens;
+  const loja = itens.find(i => /^#\d{6,}$/.test(i.str));
+  const flex = itens.find(i => i.str === 'FLEX');
+  const cep = itens.find(i => /^\d{8}$/.test(i.str));
+  const endereco = itens.find(i => i.str === 'Endereço:');
+  const envio = loja && flex && itens.find(i => /^(Venda|Pack) ID:$/.test(i.str) && i.y < loja.y && i.y > flex.y);
+  if (!envio || !cep || !endereco) return false;
+
+  const canhoto = itens.filter(i => i.y > loja.y + 20);
+  const data = itens.filter(i => i.x > flex.x + 80 && Math.abs(i.y - flex.y) < 30).sort((a, b) => b.y - a.y).map(i => i.str).join(' · ');
+  const zonas = itens.filter(i => i.y < cep.y - 5 && i.y > endereco.y + 12).sort((a, b) => b.y - a.y).map(i => i.str);
+  const E = 8.5, D = p.largura - 19.3, L = D - E, meio = E + 128;
+  const cortes = {
+    canhoto: { left: 8, right: p.largura - 18, top: p.altura, bottom: Math.min(...canhoto.map(i => i.y)) - 6 },
+    loja: { left: E + 1, right: D - 1, top: loja.y + 12, bottom: envio.y - 4 },
+    qr: { left: 82.5, right: 190.2, top: cep.y + 130.7, bottom: cep.y + 23 },
+    endereco: { left: E + 1, right: D - 1, top: endereco.y + 10, bottom: Math.min(...itens.map(i => i.y)) - 3.5 },
+  };
+  const alt = c => c.top - c.bottom;
+  const margem = 4, lateral = 12, vao = 4, linhaFlex = 22, linhaNome = 22;
+  const fixo = alt(cortes.canhoto) + vao + alt(cortes.loja) + linhaFlex + alt(cortes.endereco) + linhaNome;
+  const util = SAIDA_A - 2 * margem;
+  const qr = Math.max(100, Math.min(140, util - fixo));
+  const esc = Math.min((SAIDA_L - 2 * lateral) / (cortes.canhoto.right - cortes.canhoto.left), util / (fixo + qr));
+  const x0 = (SAIDA_L - L * esc) / 2;
+  const X = x => x0 + (x - E) * esc;
+  const Y = t => SAIDA_A - margem - t * esc;
 
   const pagina = saida.addPage([SAIDA_L, SAIDA_A]);
-  const embutida = await saida.embedPage(origem.getPage(p.indice), corte);
-  pagina.drawPage(embutida, { x: x0, y: y0, xScale: esc, yScale: esc });
-
+  const original = origem.getPage(p.indice);
   const preto = rgb(0, 0, 0);
-  const bx = x0 + 0.5 * esc, bw = (larg - 1.3) * esc;
-  pagina.drawRectangle({ x: bx, y: margem, width: bw, height: faixa, borderColor: preto, borderWidth: 0.6 });
-  let tam = 11;
-  while (tam > 6 && fontes.negrito.widthOfTextAtSize(cliente, tam) > bw - 8) tam -= 0.5;
-  pagina.drawText(cliente, { x: SAIDA_L / 2 - fontes.negrito.widthOfTextAtSize(cliente, tam) / 2, y: margem + (faixa - tam * 0.7) / 2, size: tam, font: fontes.negrito, color: preto });
+  async function colar(c, x, topo, largura = c.right - c.left) {
+    const k = largura / (c.right - c.left);
+    pagina.drawPage(await saida.embedPage(original, c), { x: X(x), y: Y(topo + alt(c) * k), xScale: esc * k, yScale: esc * k });
+  }
+  function encolher(txt, fonte, tam, largura) {
+    while (tam > 5 && fonte.widthOfTextAtSize(txt, tam) > largura) tam -= 0.5;
+    return tam;
+  }
+  function escrever(txt, fonte, tam, x, base) {
+    pagina.drawText(txt, { x: X(x), y: Y(base), size: tam * esc, font: fonte, color: preto });
+  }
+  function centrar(txt, fonte, tam, centro, base, largura) {
+    tam = encolher(txt, fonte, tam, largura);
+    escrever(txt, fonte, tam, centro - fonte.widthOfTextAtSize(txt, tam) / 2, base);
+  }
+  function linha(x1, t1, x2, t2, dashArray) {
+    pagina.drawLine({ start: { x: X(x1), y: Y(t1) }, end: { x: X(x2), y: Y(t2) }, thickness: 0.8 * esc, color: preto, dashArray });
+  }
 
-  const fx = x0 + (flex.x + flex.w / 2 - corte.left) * esc;
-  pagina.drawText(num, { x: fx - fontes.negrito.widthOfTextAtSize(num, 8) / 2, y: y0 + (flex.y - 16 - corte.bottom) * esc, size: 8, font: fontes.negrito, color: preto });
+  let t = 0;
+  await colar(cortes.canhoto, cortes.canhoto.left, t);
+  t += alt(cortes.canhoto);
+  linha(cortes.canhoto.left, t, cortes.canhoto.right, t, [3, 2]);
+  t += vao;
+  const topo = t;
+
+  await colar(cortes.loja, cortes.loja.left, t);
+  t += alt(cortes.loja);
+  linha(E, t, D, t);
+
+  centrar('FLEX', negrito, 14, (E + meio) / 2, t + 16, meio - E);
+  escrever(num, negrito, 8, meio - 8 - negrito.widthOfTextAtSize(num, 8), t + 15);
+  centrar(data, negrito, 12, (meio + D) / 2, t + 15.5, D - meio - 8);
+  linha(meio, t, meio, t + linhaFlex);
+  t += linhaFlex;
+  linha(E, t, D, t);
+
+  await colar(cortes.qr, E + 5, t + 3, qr - 6);
+  const xr = E + qr, cx = (xr + D) / 2, larg = D - xr - 6;
+  const tamCep = encolher(cep.str, negrito, 20, larg - normal.widthOfTextAtSize('CEP: ', 8));
+  const grupo = 20 + 6 + zonas.length * 14;
+  let b = t + (qr - grupo) / 2 + 16;
+  const lc = normal.widthOfTextAtSize('CEP: ', 8), vc = negrito.widthOfTextAtSize(cep.str, tamCep);
+  escrever('CEP: ', normal, 8, cx - (lc + vc) / 2, b);
+  escrever(cep.str, negrito, tamCep, cx - (lc + vc) / 2 + lc, b);
+  b += 6;
+  for (const z of zonas) centrar(z, negrito, 11, cx, b += 14, larg);
+  t += qr;
+  linha(E, t, D, t);
+
+  await colar(cortes.endereco, cortes.endereco.left, t);
+  t += alt(cortes.endereco);
+  linha(E, t, D, t);
+  centrar(cliente, negrito, 11, (E + D) / 2, t + 15, L - 8);
+  t += linhaNome;
+  pagina.drawRectangle({ x: X(E), y: Y(t), width: L * esc, height: (t - topo) * esc, borderColor: preto, borderWidth: 0.8 * esc });
+
+  const frase = FRAGIL.test(canhoto.map(i => i.str).join(' '))
+    ? 'CUIDADO: VIDRO! PRODUTO EXTREMAMENTE FRÁGIL. CONTAMOS COM VOCÊ!'
+    : 'MANUSEIE COM CUIDADO. CONTAMOS COM VOCÊ!';
+  const tf = encolher(frase, negrito, 8, SAIDA_A - 8);
+  const wf = negrito.widthOfTextAtSize(frase, tf), faixa = X(cortes.canhoto.left) / 2;
+  pagina.drawText(frase, { x: faixa + tf * 0.36, y: (SAIDA_A - wf) / 2, size: tf, font: negrito, color: preto, rotate: degrees(90) });
+  pagina.drawText(frase, { x: SAIDA_L - faixa - tf * 0.36, y: (SAIDA_A + wf) / 2, size: tf, font: negrito, color: preto, rotate: degrees(-90) });
   return true;
 }
 
@@ -314,7 +391,7 @@ async function montar(arquivos, { pdfjsLib, PDFLib }) {
     conferencia.push(conferir);
     if (!e.nf && /^FLEX$/m.test(p.texto)) {
       conferir.cliente = nomes.get(e.venda) || '';
-      if (await desenharFlex(saida, origem, p, conferir.cliente, `${n + 1}/${etiquetas.length}`, fontes, rgb)) {
+      if (await desenharFlex(saida, origem, p, conferir.cliente, `${n + 1}/${etiquetas.length}`, fontes, PDFLib)) {
         flex++;
         if (!conferir.cliente) {
           semNome++;
