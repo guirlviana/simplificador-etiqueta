@@ -192,8 +192,6 @@ function lerSeparacao(itens) {
   return nomes;
 }
 
-const FRAGIL = /vidro|copo|ta[cç]a|jarra|cristal|travessa|marinex|duralex|nadir/i;
-
 async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
   const { rgb, degrees } = PDFLib;
   const { normal, negrito } = fontes;
@@ -216,7 +214,7 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
     endereco: { left: E + 1, right: D - 1, top: endereco.y + 10, bottom: Math.min(...itens.map(i => i.y)) - 3.5 },
   };
   const alt = c => c.top - c.bottom;
-  const margem = 4, lateral = 12, vao = 4, linhaFlex = 22, linhaNome = 22;
+  const margem = 4, lateral = 12, vao = 4, linhaFlex = 30, linhaNome = 22;
   const fixo = alt(cortes.canhoto) + vao + alt(cortes.loja) + linhaFlex + alt(cortes.endereco) + linhaNome;
   const util = SAIDA_A - 2 * margem;
   const qr = Math.max(100, Math.min(140, util - fixo));
@@ -236,12 +234,12 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
     while (tam > 5 && fonte.widthOfTextAtSize(txt, tam) > largura) tam -= 0.5;
     return tam;
   }
-  function escrever(txt, fonte, tam, x, base) {
-    pagina.drawText(txt, { x: X(x), y: Y(base), size: tam * esc, font: fonte, color: preto });
+  function escrever(txt, fonte, tam, x, base, color = preto) {
+    pagina.drawText(txt, { x: X(x), y: Y(base), size: tam * esc, font: fonte, color });
   }
-  function centrar(txt, fonte, tam, centro, base, largura) {
+  function centrar(txt, fonte, tam, centro, base, largura, cor) {
     tam = encolher(txt, fonte, tam, largura);
-    escrever(txt, fonte, tam, centro - fonte.widthOfTextAtSize(txt, tam) / 2, base);
+    escrever(txt, fonte, tam, centro - fonte.widthOfTextAtSize(txt, tam) / 2, base, cor);
   }
   function linha(x1, t1, x2, t2, dashArray) {
     pagina.drawLine({ start: { x: X(x1), y: Y(t1) }, end: { x: X(x2), y: Y(t2) }, thickness: 0.8 * esc, color: preto, dashArray });
@@ -258,9 +256,10 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
   t += alt(cortes.loja);
   linha(E, t, D, t);
 
-  centrar('FLEX', negrito, 14, (E + meio) / 2, t + 16, meio - E);
-  escrever(num, negrito, 8, meio - 8 - negrito.widthOfTextAtSize(num, 8), t + 15);
-  centrar(data, negrito, 12, (meio + D) / 2, t + 15.5, D - meio - 8);
+  pagina.drawRectangle({ x: X(E), y: Y(t + linhaFlex), width: (meio - E) * esc, height: linhaFlex * esc, color: preto });
+  centrar('FRÁGIL', negrito, 20, (E + meio) / 2, t + 22, meio - E - 8, rgb(1, 1, 1));
+  centrar(`FLEX ${num}`, negrito, 12, (meio + D) / 2, t + 13, D - meio - 8);
+  centrar(data, negrito, 11, (meio + D) / 2, t + 26, D - meio - 8);
   linha(meio, t, meio, t + linhaFlex);
   t += linhaFlex;
   linha(E, t, D, t);
@@ -285,9 +284,7 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
   t += linhaNome;
   pagina.drawRectangle({ x: X(E), y: Y(t), width: L * esc, height: (t - topo) * esc, borderColor: preto, borderWidth: 0.8 * esc });
 
-  const frase = FRAGIL.test(canhoto.map(i => i.str).join(' '))
-    ? 'CUIDADO: VIDRO! PRODUTO EXTREMAMENTE FRÁGIL. CONTAMOS COM VOCÊ!'
-    : 'MANUSEIE COM CUIDADO. CONTAMOS COM VOCÊ!';
+  const frase = 'CUIDADO: PRODUTO EXTREMAMENTE FRÁGIL. CONTAMOS COM VOCÊ!';
   const cima = Y(topo), baixo = Y(t), centro = (cima + baixo) / 2;
   const tf = encolher(frase, negrito, 8, cima - baixo - 4);
   const wf = negrito.widthOfTextAtSize(frase, tf), faixa = X(cortes.canhoto.left) / 2;
