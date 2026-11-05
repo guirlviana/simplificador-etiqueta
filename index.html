@@ -288,10 +288,11 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
   const frase = FRAGIL.test(canhoto.map(i => i.str).join(' '))
     ? 'CUIDADO: VIDRO! PRODUTO EXTREMAMENTE FRÁGIL. CONTAMOS COM VOCÊ!'
     : 'MANUSEIE COM CUIDADO. CONTAMOS COM VOCÊ!';
-  const tf = encolher(frase, negrito, 8, SAIDA_A - 8);
+  const cima = Y(topo), baixo = Y(t), centro = (cima + baixo) / 2;
+  const tf = encolher(frase, negrito, 8, cima - baixo - 4);
   const wf = negrito.widthOfTextAtSize(frase, tf), faixa = X(cortes.canhoto.left) / 2;
-  pagina.drawText(frase, { x: faixa + tf * 0.36, y: (SAIDA_A - wf) / 2, size: tf, font: negrito, color: preto, rotate: degrees(90) });
-  pagina.drawText(frase, { x: SAIDA_L - faixa - tf * 0.36, y: (SAIDA_A + wf) / 2, size: tf, font: negrito, color: preto, rotate: degrees(-90) });
+  pagina.drawText(frase, { x: faixa + tf * 0.36, y: centro - wf / 2, size: tf, font: negrito, color: preto, rotate: degrees(90) });
+  pagina.drawText(frase, { x: SAIDA_L - faixa - tf * 0.36, y: centro + wf / 2, size: tf, font: negrito, color: preto, rotate: degrees(-90) });
   return true;
 }
 
