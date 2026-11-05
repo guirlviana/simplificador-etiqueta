@@ -58,7 +58,7 @@
 const MM = 72 / 25.4;
 const SAIDA_L = 100 * MM;
 const SAIDA_A = 150 * MM;
-const ETQ = { escX: 1.064, desX: -3.4, escY: 0.6617, desY: 52.5 };
+const ETQ = { escX: 0.979, desX: 8.66, escY: 0.6617, desY: 52.5 };
 
 const CODE128 = [
   '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
@@ -285,12 +285,7 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
   t += linhaNome;
   pagina.drawRectangle({ x: X(E), y: Y(t), width: L * esc, height: (t - topo) * esc, borderColor: preto, borderWidth: 0.8 * esc });
 
-  const frase = 'CUIDADO: PRODUTO EXTREMAMENTE FRÁGIL. CONTAMOS COM VOCÊ!';
-  const cima = Y(topo), baixo = Y(t), centro = (cima + baixo) / 2;
-  const tf = encolher(frase, negrito, 8, cima - baixo - 4);
-  const wf = negrito.widthOfTextAtSize(frase, tf), faixa = X(cortes.canhoto.left) / 2;
-  pagina.drawText(frase, { x: faixa + tf * 0.36, y: centro - wf / 2, size: tf, font: negrito, color: preto, rotate: degrees(90) });
-  pagina.drawText(frase, { x: SAIDA_L - faixa - tf * 0.36, y: centro + wf / 2, size: tf, font: negrito, color: preto, rotate: degrees(-90) });
+  desenharAviso(pagina, negrito, degrees, Y(topo), Y(t), X(cortes.canhoto.left) / 2);
   return true;
 }
 
@@ -304,6 +299,15 @@ async function lerArquivo(bytes, nome, pdfjsLib) {
     paginas.push({ arquivo: nome, indice: i - 1, texto, itens, tipo: classificar(texto), largura: p.view[2] - p.view[0], altura: p.view[3] - p.view[1] });
   }
   return paginas;
+}
+
+function desenharAviso(pagina, negrito, degrees, cima, baixo, faixa) {
+  const frase = 'CUIDADO: PRODUTO EXTREMAMENTE FRÁGIL. CONTAMOS COM VOCÊ!';
+  let tam = 8;
+  while (tam > 5 && negrito.widthOfTextAtSize(frase, tam) > cima - baixo - 4) tam -= 0.5;
+  const largura = negrito.widthOfTextAtSize(frase, tam), centro = (cima + baixo) / 2;
+  pagina.drawText(frase, { x: faixa + tam * 0.36, y: centro - largura / 2, size: tam, font: negrito, rotate: degrees(90) });
+  pagina.drawText(frase, { x: SAIDA_L - faixa - tam * 0.36, y: centro + largura / 2, size: tam, font: negrito, rotate: degrees(-90) });
 }
 
 function desenharFaixa(pagina, danfe, fontes, rgb) {
@@ -349,7 +353,7 @@ function desenharFaixa(pagina, danfe, fontes, rgb) {
 }
 
 async function montar(arquivos, { pdfjsLib, PDFLib }) {
-  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const { PDFDocument, StandardFonts, rgb, degrees } = PDFLib;
   const avisos = [];
   const paginas = [];
   const fontesPdf = {};
@@ -429,6 +433,8 @@ async function montar(arquivos, { pdfjsLib, PDFLib }) {
     const num = `${n + 1}/${etiquetas.length}`;
     pagina.drawText(num, { x: 40 - fontes.negrito.widthOfTextAtSize(num, 8) / 2, y: 345, size: 8, font: fontes.negrito });
     desenharFaixa(pagina, danfe, fontes, rgb);
+    const loja = p.itens.find(i => /^#\d{6,}$/.test(i.str));
+    if (loja) desenharAviso(pagina, fontes.negrito, degrees, ETQ.desY + (loja.y + 14) * ETQ.escY, ETQ.desY + 4, 8.4);
   }
 
   for (const nf of notas.keys()) {

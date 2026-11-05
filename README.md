@@ -1,6 +1,7 @@
 # Simplificador de etiqueta
 
 Junta a etiqueta do Mercado Livre e a DANFE numa folha 10x15 só.
+Nas bordas vai o aviso de produto frágil.
 
 A etiqueta do Flex não tem nota. Ela sai em 10x15, compacta, com o nome do cliente embaixo.
 Nas bordas e no topo vai o aviso de produto frágil.
