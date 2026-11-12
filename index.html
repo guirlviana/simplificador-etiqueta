@@ -38,6 +38,7 @@
   .produto .sku { font-weight: 700; }
   .produto.ok .txt { text-decoration: line-through; opacity: .55; }
   .botoes { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .versao { position: fixed; right: 12px; bottom: 8px; font-size: 12px; color: var(--suave); }
   .botoes a, .botoes button { font: inherit; font-weight: 600; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--texto); background: var(--texto); color: #fff; text-decoration: none; cursor: pointer; }
 </style>
 </head>
@@ -53,6 +54,7 @@
   </label>
   <div id="resultado"></div>
 </main>
+<div class="versao">versão 2026.11.12</div>
 
 <script id="nucleo">
 const MM = 72 / 25.4;
