@@ -117,7 +117,7 @@ function lerDanfe(texto) {
 }
 
 function lerEtiqueta(texto) {
-  const venda = ((texto.match(/(?:Venda|Pack)(?: ID)?:\s*([\d ]+)/) || [])[1] || '').replace(/\s/g, '');
+  const venda = ((texto.match(/(?:Venda|Pack|Envio)(?: ID)?:\s*([\d ]+)/) || [])[1] || '').replace(/\s/g, '');
   const nf = (texto.match(/\bNFe?:\s*(\d+)/) || [])[1] || null;
   const linhas = texto.split('\n');
   const iCep = linhas.findIndex(l => /^CEP:/.test(l));
@@ -132,7 +132,7 @@ function classificar(texto) {
   if (/Chave de acesso/i.test(texto) && /DANFE/i.test(texto)) return 'danfe';
   if (/Identifi+ca[cç][aã]o/i.test(texto) && /Produto/.test(texto)) return 'separacao';
   if (/DECLARA[CÇ][AÃ]O DE CONTE[UÚ]DO/i.test(texto)) return 'declaracao';
-  if (/(?:Venda|Pack)(?: ID)?:/.test(texto) && /CEP:/.test(texto)) return 'etiqueta';
+  if (/(?:Venda|Pack|Envio)(?: ID)?:/.test(texto) && /CEP:/.test(texto)) return 'etiqueta';
   return 'outra';
 }
 
@@ -164,7 +164,7 @@ function agruparLinhas(itens) {
 
 function lerProdutos(itens) {
   const loja = itens.find(i => /^#\d{6,}$/.test(i.str));
-  const topo = itens.find(i => /^(Venda|Pack) ID:$/.test(i.str));
+  const topo = itens.find(i => /^(?:(?:Venda|Pack) ID|Envio):$/.test(i.str));
   if (!loja || !topo) return [];
   const area = itens.filter(i => i.y > loja.y + 8 && i.y < topo.y - 6 && i.x >= 80);
   const produtos = [];
@@ -183,7 +183,7 @@ function lerSeparacao(itens) {
   const linhas = agruparLinhas(itens.filter(i => !coluna || i.x < coluna.x));
   const nomes = new Map();
   linhas.forEach((linha, i) => {
-    const venda = (linha.match(/^Venda:\s*(\d+)$/) || [])[1];
+    const venda = (linha.match(/^(?:Venda|Envio):\s*(\d+)$/) || [])[1];
     if (!venda || !linhas[i + 1]) return;
     nomes.set(venda, linhas[i + 1]);
     const pack = ((linhas[i - 1] || '').match(/^Pack ID:\s*(\d+)$/) || [])[1];
@@ -200,7 +200,7 @@ async function desenharFlex(saida, origem, p, cliente, num, fontes, PDFLib) {
   const flex = itens.find(i => i.str === 'FLEX');
   const cep = itens.find(i => /^\d{8}$/.test(i.str));
   const endereco = itens.find(i => i.str === 'Endereço:');
-  const envio = loja && flex && itens.find(i => /^(Venda|Pack) ID:$/.test(i.str) && i.y < loja.y && i.y > flex.y);
+  const envio = loja && flex && itens.find(i => /^(?:(?:Venda|Pack) ID|Envio):$/.test(i.str) && i.y < loja.y && i.y > flex.y);
   if (!envio || !cep || !endereco) return false;
 
   const canhoto = itens.filter(i => i.y > loja.y + 20);
@@ -389,6 +389,11 @@ async function montar(arquivos, { pdfjsLib, PDFLib }) {
 
   for (const [n, p] of etiquetas.entries()) {
     const e = lerEtiqueta(p.texto);
+    if (!e.nf) {
+      const seguinte = paginas.find(q => q.arquivo === p.arquivo && q.indice === p.indice + 1 && q.tipo === 'danfe');
+      const d = seguinte && lerDanfe(seguinte.texto);
+      if (d && d.destinatario && p.texto.includes(d.destinatario)) e.nf = d.nf;
+    }
     const origem = fontesPdf[p.arquivo];
     const conferir = { numero: n + 1, venda: e.venda, cliente: e.destinatario, produtos: lerProdutos(p.itens) };
     conferencia.push(conferir);
