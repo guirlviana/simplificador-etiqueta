@@ -18,3 +18,12 @@ Use em https://guirlviana.github.io/simplificador-etiqueta/
 3. Clique em "Abrir para imprimir".
 
 O PDF fica no seu computador. A página não envia nada para nenhum servidor.
+
+## Pela linha de comando
+
+```
+npm install
+node simplificar.mjs <saida.pdf> <entrada.pdf>...
+```
+
+Usa o mesmo código da página. Sai com erro (código 1) se faltar uma DANFE ou uma etiqueta.

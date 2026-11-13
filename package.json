@@ -1,0 +1,9 @@
+{
+  "name": "simplificador-etiqueta",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "3.11.174"
+  }
+}
