@@ -11,6 +11,10 @@ Na Amazon, solte a etiqueta e a DANFE do pedido juntas. Sai uma folha 10x15 com 
 a DANFE embaixo e o aviso de frágil nas bordas. O nome do arquivo da etiqueta precisa ter o
 número do pedido, por exemplo `etiqueta-amazon-701-2347273-7877803.pdf`.
 
+No TikTok, baixe as etiquetas com a lista do pedido (Packing List). Sai uma folha 10x15 por
+pedido: os produtos no topo, como um canhoto, a etiqueta J&T embaixo e o aviso de frágil nas bordas.
+A etiqueta e a lista se ligam pelo número do pedido.
+
 Use em https://guirlviana.github.io/simplificador-etiqueta/
 
 1. No Mercado Livre, baixe as etiquetas no formato 10x15, com a DANFE.
