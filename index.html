@@ -91,20 +91,32 @@ function code128c(digitos) {
   return bits;
 }
 
-function chaveValida(chave) {
-  if (!/^\d{44}$/.test(chave)) return false;
+function digitoDaChave(base) {
   let soma = 0, peso = 2;
   for (let i = 42; i >= 0; i--) {
-    soma += Number(chave[i]) * peso;
+    soma += Number(base[i]) * peso;
     peso = peso === 9 ? 2 : peso + 1;
   }
   const resto = soma % 11;
-  const dv = resto < 2 ? 0 : 11 - resto;
-  return dv === Number(chave[43]);
+  return resto < 2 ? 0 : 11 - resto;
+}
+
+function chaveValida(chave) {
+  if (!/^\d{44}$/.test(chave)) return false;
+  return digitoDaChave(chave) === Number(chave[43]);
+}
+
+function acharChave(texto) {
+  const inteira = (texto.match(/\b\d{44}\b/) || [])[0];
+  if (inteira) return inteira;
+  const linha = ((texto.match(/CHAVE DE ACESSO\s*\n([\d ]+)/) || [])[1] || '').replace(/\s/g, '');
+  if (linha.length === 44) return linha;
+  if (linha.length === 43) return linha + digitoDaChave(linha);
+  return null;
 }
 
 function lerDanfe(texto) {
-  const chave = (texto.match(/\b\d{44}\b/) || [])[0];
+  const chave = acharChave(texto);
   if (!chave) return null;
   const emissao = (texto.match(/Emiss[aã]o\s*(\d{2}\/\d{2}\/\d{4})/) || [])[1] || '';
   const tipo = /\b0\s*-\s*Entrada/i.test(texto) ? 'Entrada' : 'Saída';
@@ -123,7 +135,7 @@ function lerDanfe(texto) {
     d.pedido = pedido;
     d.emissao = (texto.match(/DATA DE EMISS[AÃ]O\s*(\d{2}\/\d{2}\/\d{4})/) || [])[1] || '';
     d.tipo = /NATUREZA DA OPERA[CÇ][AÃ]O\s*Venda/.test(texto) ? 'Saída' : 'Entrada';
-    d.destinatario = (texto.match(/NOME\/RAZ[AÃ]O SOCIAL\s*\n(.+)/) || [])[1] || '';
+    d.destinatario = (texto.match(/NOME\s*\/\s*RAZ[AÃ]O SOCIAL\s*\n(.+)/) || [])[1] || '';
   }
   return d;
 }
