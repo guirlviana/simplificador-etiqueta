@@ -109,7 +109,7 @@ function chaveValida(chave) {
 function acharChave(texto) {
   const inteira = (texto.match(/\b\d{44}\b/) || [])[0];
   if (inteira) return inteira;
-  const linha = ((texto.match(/CHAVE DE ACESSO\s*\n([\d ]+)/) || [])[1] || '').replace(/\s/g, '');
+  const linha = ((texto.match(/CHAVE DE ACESSO\s*\n((?:[\d ]+(?:\n|$))+)/) || [])[1] || '').replace(/\s/g, '');
   if (linha.length === 44) return linha;
   if (linha.length === 43) return linha + digitoDaChave(linha);
   return null;

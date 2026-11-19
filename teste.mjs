@@ -45,3 +45,22 @@ test('layout com IBS/CBS: chave com espaços e cortada no último dígito', () =
   assert.equal(d.destinatario, 'Cliente Novo');
   assert.equal(d.valida, true);
 });
+
+const chaveEmDuasLinhas = `CHAVE DE ACESSO
+3526 1136 9590 2000 0131 5500 5000 0000 1513
+0000 0150
+Consulte a autenticidade no portal nacional da NF-e www.nfe.fazenda.gov.br/portal
+NATUREZA DA OPERAÇÃO
+Venda Fora do Estado
+NOME / RAZÃO SOCIAL
+Cliente Natal
+DATA DE EMISSÃO
+18/11/2026
+Pedido Amazon 701-8831354-1380231 DOCUMENTO EMITIDO`;
+
+test('layout com IBS/CBS: chave quebrada em duas linhas', () => {
+  const d = lerDanfe(chaveEmDuasLinhas);
+  assert.equal(d.chave, '35261136959020000131550050000000151300000150');
+  assert.equal(d.nf, '15');
+  assert.equal(d.valida, true);
+});
